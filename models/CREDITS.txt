@@ -1,0 +1,7 @@
+3D models by Kenney (www.kenney.nl), released under CC0.
+
+cars/  Car Kit 3.1. Licence file: LICENSE-kenney-car-kit.txt
+city/  Kenney's suburban city models.
+
+Both were obtained from the public GitHub repository Arslan12216775/kenney_car-kit, because kenney.nl refused
+automated downloads. Before shipping, replace them with copies downloaded from kenney.nl.
