@@ -1,0 +1,29 @@
+{
+  "name": "getaway-run",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate.ts",
+    "report": "tsx scripts/report.ts",
+    "dev": "vite",
+    "export": "tsx scripts/export-viewer.ts",
+    "tune": "tsx scripts/export-viewer.ts --count 16",
+    "sweep": "tsx scripts/sweep.ts",
+    "build": "vite build",
+    "deploy": "tsx scripts/deploy.ts"
+  },
+  "dependencies": {
+    "pixi.js": "^8.22.0",
+    "planck": "^1.5.1",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/three": "^0.187.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7"
+  }
+}

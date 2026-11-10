@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0e14">
+<title>Getaway Run</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0d0e14; color: #f2f2f6; font-family: "Segoe UI", system-ui, Arial, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  html, body { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  :root { --gut: 12px; --top: max(var(--gut), env(safe-area-inset-top)); --bot: max(var(--gut), env(safe-area-inset-bottom)); --lft: max(var(--gut), env(safe-area-inset-left)); --rgt: max(var(--gut), env(safe-area-inset-right)); }
+  .glass { background: rgba(13,14,20,.78); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  /* top: wallet left, debug right, multiplier centred under them */
+  #credit { position: fixed; top: var(--top); left: var(--lft); padding: 8px 12px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; z-index: 10; }
+  #topup { display: none; margin-left: 8px; padding: 3px 8px; border-radius: 6px; background: #2f6bff; color: #fff; font-size: 12px; font-weight: 700; }
+  #debugBtn { position: fixed; top: var(--top); right: var(--rgt); padding: 8px 12px; font-size: 13px; font-weight: 700; color: #c9cad3; z-index: 20; }
+  #debugBtn.armed { color: #ffb347; border-color: #ffb347; }
+  #debugMenu { position: fixed; top: calc(var(--top) + 44px); right: var(--rgt); width: min(260px, calc(100vw - 24px)); padding: 8px; display: none; flex-direction: column; gap: 6px; z-index: 20; }
+  #debugMenu.open { display: flex; }
+  #debugMenu button, #debugMenu a { width: 100%; padding: 10px 12px; border-radius: 8px; background: #2b2d36; color: #fff; font-size: 14px; text-align: left; text-decoration: none; }
+  #debugMenu .forced { background: #7a4a12; }
+  #debugMenu small { opacity: .55; padding: 2px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+  #mult { position: fixed; top: calc(var(--top) + 46px); left: 50%; transform: translateX(-50%); font-size: 56px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.9); }
+  #mult.good { color: #7cff6b; } #mult.bad { color: #ff5a5f; }
+  /* bottom dock: stake chips (between runs), then the main button and the autoplay toggle */
+  #dock { position: fixed; left: 0; right: 0; bottom: var(--bot); margin: 0 auto; width: min(440px, calc(100vw - 24px)); min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; z-index: 10; }
+  #chips { display: none; gap: 6px; }
+  #dock.betting #chips { display: flex; }
+  .chip { flex: 1 1 0; min-width: 0; padding: 10px 0; border-radius: 9px; background: #2b2d36; color: #fff; font-weight: 700; font-size: 15px; }
+  .chip.on { background: #ffd60a; color: #2c2300; }
+  #mainRow { display: flex; gap: 8px; }
+  #go, #cash { flex: 1 1 0; min-width: 0; min-height: 56px; padding: 12px; font-size: 18px; font-weight: 800; border-radius: 12px; }
+  #go { display: none; background: #2f6bff; color: #fff; }
+  #dock.betting #go { display: block; } #dock.betting #cash { display: none; }
+  #cash { background: #39c16c; color: #06210f; }
+  #cash:disabled { background: #2b2d36; color: #84868f; cursor: default; }
+  #cash.hot { background: #ffd60a; color: #2c2300; }
+  #auto { flex: none; width: 64px; border-radius: 12px; background: #2b2d36; color: #c9cad3; font-size: 12px; font-weight: 800; line-height: 1.2; }
+  #auto.on { background: #ffd60a; color: #2c2300; }
+  #banner { position: fixed; top: 32%; left: 50%; transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); text-align: center; display: none; background: rgba(13,14,20,.9); border-radius: 12px; padding: 14px 18px; border: 1px solid rgba(255,255,255,.14); z-index: 15; }
+  #banner.show { display: block; }
+  #banner.good #bannerTitle { color: #7cff6b; } #banner.bad #bannerTitle { color: #ff5a5f; } #banner.warn #bannerTitle { color: #ffd60a; }
+  #bannerTitle { font-size: 30px; font-weight: 900; letter-spacing: .5px; }
+  #bannerSub { font-size: 14px; opacity: .88; margin-top: 4px; }
+  #next { display: none; margin: 12px auto 0; padding: 12px 28px; font-size: 16px; font-weight: 700; border-radius: 10px; background: #2f6bff; color: #fff; }
+  #levers { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); display: none; flex-direction: column; background: #12131b; border-left: 1px solid rgba(255,255,255,.14); z-index: 30; font-size: 13px; }
+  #levers.open { display: flex; }
+  #levers header { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; gap: 8px; }
+  #levers .top { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 800; }
+  #levers .x { background: none; color: #fff; font-size: 18px; padding: 0 4px; }
+  #levers input { font: inherit; color: #fff; background: #23252f; border: 1px solid rgba(255,255,255,.16); border-radius: 5px; padding: 4px 6px; min-width: 0; }
+  #levers input.bad { border-color: #ff5a5f; }
+  #leverOdds { background: #1c1e28; border-radius: 6px; padding: 8px 10px; line-height: 1.5; }
+  #leverOdds b { color: #ffd60a; }
+  #leverList { flex: 1; overflow-y: auto; padding: 4px 14px 14px; }
+  #leverList summary { cursor: pointer; font-weight: 800; padding: 9px 0; text-transform: capitalize; }
+  #leverList summary small { font-weight: 400; opacity: .6; text-transform: none; margin-left: 6px; }
+  .lv { padding: 6px 0; border-top: 1px solid rgba(255,255,255,.06); }
+  .lv .line { display: flex; align-items: center; gap: 8px; }
+  .lv .name { flex: 1; }
+  .lv .in { display: flex; gap: 4px; width: 150px; justify-content: flex-end; }
+  .lv .in input[type=number] { width: 100%; }
+  .lv .undo { background: none; color: #ffd60a; visibility: hidden; padding: 0 2px; }
+  .lv.changed .name { color: #ffd60a; font-weight: 700; }
+  .lv.changed .undo { visibility: visible; }
+  .lv small { display: block; opacity: .6; margin-top: 2px; line-height: 1.35; }
+  #levers footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; gap: 8px; }
+  #levers .btns { display: flex; gap: 8px; align-items: center; }
+  #leverApply { flex: 1; padding: 11px; border-radius: 8px; font-weight: 800; background: #2f6bff; color: #fff; }
+  #leverApply:disabled { background: #2b2d36; color: #84868f; cursor: default; }
+  #leverReset { padding: 11px; border-radius: 8px; background: #2b2d36; color: #fff; }
+  #leverStatus { min-height: 16px; opacity: .85; white-space: pre-wrap; }
+  @media (max-height: 560px) { #mult { font-size: 40px; top: calc(var(--top) + 4px); } #go, #cash { min-height: 46px; } }
+  /* wide screens: controls beside the road, so nothing covers the robber or what is chasing it */
+  @media (min-width: 900px) {
+    #dock { left: auto; right: var(--rgt); margin: 0; width: 360px; }
+    #mult { font-size: 72px; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="credit" class="glass"><span id="creditVal"></span><button id="topup">+ $500</button></div>
+  <button id="debugBtn" class="glass">Debug</button>
+  <div id="debugMenu" class="glass"><small>Result forcer</small></div>
+  <div id="mult">1.00x</div>
+  <div id="dock" class="glass">
+    <div id="chips"></div>
+    <div id="mainRow">
+      <button id="go">Start the getaway</button>
+      <button id="cash" disabled>Cash out</button>
+      <button id="auto">AUTO<br>OFF</button>
+    </div>
+  </div>
+  <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div><button id="next">Next run</button></div>
+  <script type="module" src="/src/view/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balance Analysis</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #0d0e14; --surface: #16171f; --surface-2: #1d1f29; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2a2b33; --base: #3a3b44; --border: rgba(255,255,255,.10); --accent: #ffd60a; --warn: #fab219;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; padding: 18px 24px 6px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header nav a { color: var(--ink-2); margin-right: 14px; }
+  main { padding: 0 24px 60px; max-width: 1500px; }
+  h2 { font-size: 17px; margin: 30px 0 10px; display: flex; gap: 10px; align-items: center; }
+  h3 { font-size: 15px; margin: 0 0 4px; }
+  select, button { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+  .muted { color: var(--muted); font-weight: 400; } .small { font-size: 12px; }
+  .empty { color: var(--ink-2); padding: 12px 0; }
+  .warnLine { color: var(--warn); }
+  #pickerBox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-top: 10px; overflow-x: auto; }
+  .picker tr.on td { color: var(--ink); }
+  .pick { display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
+  .sweeps { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .chipBtn { cursor: pointer; } .chipBtn:hover { border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; overflow-x: auto; }
+  .help { color: var(--ink-2); margin: 0 0 8px; font-size: 13px; max-width: 75ch; }
+  .chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  .chart .base { stroke: var(--base); stroke-width: 1; }
+  .chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .chart .axisTitle { fill: var(--muted); font-size: 11px; }
+  .chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .line.dash { stroke-dasharray: 6 5; stroke-width: 1.6; }
+  .chart .band { opacity: .14; }
+  .chart .dot { stroke: var(--surface); stroke-width: 2; }
+  .chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .chart .seg:hover { filter: brightness(1.25); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; margin-right: 2px; vertical-align: -1px; }
+  .sw.dash { height: 0; width: 14px; border-radius: 0; border-top: 2px dashed var(--c); background: none; }
+  .sw.none { background: transparent; }
+  .cardFoot { margin-top: 6px; }
+  .linkish { background: none; border: 0; color: var(--muted); padding: 0; cursor: pointer; text-decoration: underline; font-size: 12px; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.data th, table.data td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  table.data th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  table.data td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.glance td:first-child { min-width: 200px; }
+  .tableBox table { margin-top: 8px; }
+  .flag { color: var(--warn); font-weight: 600; }
+  .wide { grid-column: 1 / -1; }
+  .sweepBox { border-left: 3px solid var(--accent); padding-left: 14px; margin: 18px 0 8px; }
+  .tip { position: fixed; display: none; pointer-events: none; z-index: 10; background: #23252f; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.4); max-width: 360px; }
+  .tipTitle { color: var(--muted); margin-bottom: 4px; }
+  .tipRow { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+  .tipRow b { font-variant-numeric: tabular-nums; } .tipRow span { color: var(--ink-2); }
+  @media (max-width: 600px) { header, main { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Balance analysis</h1>
+    <nav><a href="/">Game</a><a href="/explain.html">Branch explorer</a></nav>
+  </header>
+  <main>
+    <div id="pickerBox"><div id="picker"><p class="empty">Loading datasets…</p></div></div>
+    <div id="out"></div>
+  </main>
+  <script type="module" src="/src/analysis/page.ts"></script>
+</body>
+</html>
